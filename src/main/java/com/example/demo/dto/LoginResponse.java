@@ -8,8 +8,8 @@ public record LoginResponse(
         String tokenName,
         @Schema(description = "登录凭证；后续请求通过 satoken 请求头携带", example = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
         String tokenValue,
-        @Schema(description = "登录用户 ID", example = "1")
-        Long userId,
+        @Schema(description = "登录用户摘要")
+        LoginUserResponse user,
         @Schema(description = "Token 剩余有效时间，单位为秒", example = "2592000")
         long tokenTimeout
 ) {

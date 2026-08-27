@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.common.Result;
+import com.example.demo.dto.CurrentUserResponse;
 import com.example.demo.dto.LoginRequest;
 import com.example.demo.dto.LoginResponse;
 import com.example.demo.dto.LoginStatusResponse;
@@ -10,7 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.HttpStatus;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,24 +31,30 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    @Operation(summary = "简易登录")
+    @Operation(summary = "账号密码登录")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "登录成功"),
-            @ApiResponse(responseCode = "400", description = "用户 ID 不合法"),
-            @ApiResponse(responseCode = "404", description = "用户不存在")
+            @ApiResponse(responseCode = "400", description = "请求参数不合法"),
+            @ApiResponse(responseCode = "401", description = "用户名或密码错误")
     })
-    public ResponseEntity<Result<LoginResponse>> login(@RequestBody LoginRequest request) {
-        if (request == null || request.userId() == null || request.userId() <= 0) {
-            return ResponseEntity.badRequest()
-                    .body(Result.fail(400, "用户 ID 必须是大于 0 的整数", null));
-        }
-
-        LoginResponse loginResponse = authService.login(request.userId());
-        if (loginResponse == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Result.fail(404, "用户不存在", null));
-        }
+    public ResponseEntity<Result<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
+        LoginResponse loginResponse = authService.login(request);
         return ResponseEntity.ok(Result.success(200, "登录成功", loginResponse));
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "退出登录")
+    @SecurityRequirement(name = "satoken")
+    public ResponseEntity<Result<Void>> logout() {
+        authService.logout();
+        return ResponseEntity.ok(Result.success(200, "退出成功", null));
+    }
+
+    @GetMapping("/me")
+    @Operation(summary = "获取当前用户")
+    @SecurityRequirement(name = "satoken")
+    public ResponseEntity<Result<CurrentUserResponse>> me() {
+        return ResponseEntity.ok(Result.success(authService.getCurrentUser()));
     }
 
     @GetMapping("/is-login")

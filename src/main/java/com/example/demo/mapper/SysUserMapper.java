@@ -15,6 +15,16 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
 
     SysUser selectByUsername(@Param("username") String username);
 
+    String selectEnabledDepartmentNameById(@Param("departmentId") Long departmentId);
+
+    Long selectEnabledDepartmentIdByCode(@Param("code") String code);
+
+    Long selectEnabledRoleIdByCode(@Param("code") String code);
+
+    long countUsersByRoleCode(@Param("roleCode") String roleCode);
+
+    int insertUserRole(@Param("userId") Long userId, @Param("roleId") Long roleId);
+
     List<String> selectEnabledRoleCodesByUserId(@Param("userId") Long userId);
 
     List<String> selectEnabledPermissionCodesByUserId(@Param("userId") Long userId);

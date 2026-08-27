@@ -37,6 +37,40 @@
         LIMIT 1
     </select>
 
+    <select id="selectEnabledDepartmentNameById" resultType="java.lang.String">
+        SELECT name
+        FROM sys_department
+        WHERE id = #{departmentId}
+          AND status = 1
+    </select>
+
+    <select id="selectEnabledDepartmentIdByCode" resultType="java.lang.Long">
+        SELECT id
+        FROM sys_department
+        WHERE code = #{code}
+          AND status = 1
+    </select>
+
+    <select id="selectEnabledRoleIdByCode" resultType="java.lang.Long">
+        SELECT id
+        FROM sys_role
+        WHERE code = #{code}
+          AND status = 1
+    </select>
+
+    <select id="countUsersByRoleCode" resultType="long">
+        SELECT COUNT(*)
+        FROM sys_user user_account
+                 INNER JOIN sys_user_role user_role ON user_role.user_id = user_account.id
+                 INNER JOIN sys_role role ON role.id = user_role.role_id
+        WHERE role.code = #{roleCode}
+    </select>
+
+    <insert id="insertUserRole">
+        INSERT INTO sys_user_role (user_id, role_id)
+        VALUES (#{userId}, #{roleId})
+    </insert>
+
     <select id="selectEnabledRoleCodesByUserId" resultType="java.lang.String">
         SELECT DISTINCT role.code
         FROM sys_user user_account

@@ -110,3 +110,17 @@ src/test/java/com/example/demo/migration/FlywayMigrationTests.java
 ```
 
 该测试只查询一个明确不存在的用户，不插入、更新或删除开发数据。
+
+## 7. 首个管理员初始化
+
+应用默认不会创建管理员。仅在本地或受控环境首次初始化时，临时设置以下变量：
+
+```powershell
+$env:BOOTSTRAP_ADMIN_ENABLED = "true"
+$env:BOOTSTRAP_ADMIN_USERNAME = "admin"
+$env:BOOTSTRAP_ADMIN_PASSWORD = "至少 12 位的本地强密码"
+```
+
+启动成功后，初始化器会创建一个 `SYSTEM_ADMIN` 用户并写入 BCrypt 哈希。重复启动不会重复创建；确认登录成功后应立即清除当前 PowerShell 中的 `BOOTSTRAP_ADMIN_PASSWORD`，并将 `BOOTSTRAP_ADMIN_ENABLED` 恢复为 `false`。
+
+密码不会写入迁移文件、日志、Swagger 或 Git。

@@ -23,8 +23,8 @@ public class SwaggerConfig {
                 .name("JavaSeAI Design Team");
 
         Info info = new Info()
-                .title("用户管理系统 API")
-                .description("用户新增、查询、修改、删除和分页查询接口文档")
+                .title("企业内部工单系统 API")
+                .description("企业内部工单、用户、角色与权限接口文档")
                 .version("1.0.0")
                 .contact(contact);
 
