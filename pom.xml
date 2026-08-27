@@ -63,10 +63,10 @@
             <artifactId>mysql-connector-j</artifactId>
         </dependency>
 
-        <!-- 数据库版本迁移：核心能力与 MySQL 数据库支持 -->
+        <!-- Spring Boot 4 将 Flyway 自动配置拆分为独立 Starter -->
         <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>

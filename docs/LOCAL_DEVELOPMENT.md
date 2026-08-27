@@ -21,8 +21,8 @@ $env:DB_PASSWORD = "你的本地数据库密码"
 以下变量可选，未设置时使用开发默认值：
 
 ```powershell
-$env:DB_URL = "jdbc:mysql://127.0.0.1:3306/demo?characterEncoding=UTF-8&serverTimezone=UTC"
-$env:DB_USERNAME = "root"
+$env:DB_URL = "jdbc:mysql://127.0.0.1:3306/enterprise_ticket_dev?characterEncoding=UTF-8&serverTimezone=UTC"
+$env:DB_USERNAME = "ticket_app"
 ```
 
 在 IntelliJ IDEA 中运行时，可以打开：
@@ -46,12 +46,14 @@ V1 创建系统和 RBAC 表
 → V3 初始化部门、分类、角色和权限
 ```
 
-现有开发库中已经存在原型 `user` 表，因此配置使用基线版本 `0`：
+对于曾经包含原型 `user` 表且尚未纳入 Flyway 的旧开发库，配置使用基线版本 `0`：
 
 - Flyway 创建 `flyway_schema_history`；
 - 保留旧 `user` 表；
 - 从 V1 开始创建新表；
 - 不执行删除和数据清空。
+
+当前标准开发库为 `enterprise_ticket_dev`，已经执行 V1~V3。新建空库时会直接从 V1 开始迁移，不会产生基线记录。
 
 `clean-disabled: true` 禁止通过 Flyway Clean 清空数据库。
 
@@ -80,3 +82,23 @@ V1 创建系统和 RBAC 表
 ```powershell
 .\mvnw.cmd "-Dtest=ControllerLogAspectTests,RedisConfigTests,AuthControllerTests,UserControllerPermissionTests,MyBatisMetaObjectHandlerTests,StpInterfaceImplTests,RedisUtilsTests" test
 ```
+
+## 6. 自动化迁移验收
+
+迁移集成测试位于：
+
+```text
+src/test/java/com/example/demo/migration/FlywayMigrationTests.java
+```
+
+测试在未提供 `migration.test.url` 时自动跳过，不会误连本地开发数据库。只有显式传入隔离数据库地址后才会执行迁移。
+
+测试会核对：
+
+- V1~V3 共 3 个迁移全部成功；
+- 创建 9 张目标业务表；
+- 创建 12 个外键和 8 个检查约束；
+- 初始化 5 个部门、5 个分类、4 个角色、15 个权限和 25 条角色权限关系；
+- 第二次执行迁移时新增迁移数为 0。
+
+2026-08-27 已使用官方 MySQL 8.0 Docker 镜像完成隔离验证。MySQL 8.4 同样执行成功，但当前 Flyway 会提示该数据库版本高于其已验证版本，因此 V1.0 的正式兼容基线采用 MySQL 8.0。
