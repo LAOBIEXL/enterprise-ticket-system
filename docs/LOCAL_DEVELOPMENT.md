@@ -102,3 +102,11 @@ src/test/java/com/example/demo/migration/FlywayMigrationTests.java
 - 第二次执行迁移时新增迁移数为 0。
 
 2026-08-27 已使用官方 MySQL 8.0 Docker 镜像完成隔离验证。MySQL 8.4 同样执行成功，但当前 Flyway 会提示该数据库版本高于其已验证版本，因此 V1.0 的正式兼容基线采用 MySQL 8.0。
+
+正式用户 Mapper 的只读集成测试默认关闭。需要验证 Mapper XML 与本地开发库时，在已经设置数据库环境变量的 PowerShell 中执行：
+
+```powershell
+.\mvnw.cmd "-Dtest=SysUserMapperIntegrationTests" "-Dsys-user.mapper.test.enabled=true" test
+```
+
+该测试只查询一个明确不存在的用户，不插入、更新或删除开发数据。
