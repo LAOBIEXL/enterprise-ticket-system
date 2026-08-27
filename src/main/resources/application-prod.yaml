@@ -1,0 +1,4 @@
+server:
+  servlet:
+    context-path: /prod-api
+  port: 9090

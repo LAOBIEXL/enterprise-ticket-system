@@ -1,0 +1,12 @@
+spring:
+  profiles:
+    active: dev
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    # 现有开发库已有原型 user 表但没有 Flyway 历史表：将其标记为版本 0，随后执行 V1 及以后迁移。
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: true
+    # 禁止通过 Flyway clean 清空数据库。
+    clean-disabled: true
