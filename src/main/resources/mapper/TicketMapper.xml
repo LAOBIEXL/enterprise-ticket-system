@@ -100,4 +100,31 @@
         WHERE record_item.ticket_id = #{ticketId}
         ORDER BY record_item.create_time ASC, record_item.id ASC
     </select>
+
+    <update id="updateAssignment">
+        UPDATE ticket
+        SET assignee_id = #{assigneeId},
+            status = #{toStatus},
+            version = version + 1,
+            update_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+          AND status = #{fromStatus}
+          AND version = #{version}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE ticket
+        SET status = #{toStatus},
+            version = version + 1,
+            update_time = CURRENT_TIMESTAMP
+        <if test="resolvedTime != null">
+            , resolved_time = #{resolvedTime}
+        </if>
+        <if test="closedTime != null">
+            , closed_time = #{closedTime}
+        </if>
+        WHERE id = #{id}
+          AND status = #{fromStatus}
+          AND version = #{version}
+    </update>
 </mapper>

@@ -5,6 +5,12 @@ import cn.dev33.satoken.annotation.SaMode;
 import com.example.demo.common.PageResponse;
 import com.example.demo.common.Result;
 import com.example.demo.dto.CreateTicketRequest;
+import com.example.demo.dto.AddTicketRecordRequest;
+import com.example.demo.dto.AssignTicketRequest;
+import com.example.demo.dto.ConfirmTicketRequest;
+import com.example.demo.dto.ReassignTicketRequest;
+import com.example.demo.dto.ResolveTicketRequest;
+import com.example.demo.dto.ReturnTicketRequest;
 import com.example.demo.dto.TicketDetailResponse;
 import com.example.demo.dto.TicketQuery;
 import com.example.demo.dto.TicketSummaryResponse;
@@ -88,5 +94,67 @@ public class TicketController {
     public ResponseEntity<Result<TicketDetailResponse>> detail(
             @Positive(message = "工单 ID 必须大于 0") @PathVariable Long id) {
         return ResponseEntity.ok(Result.success(ticketService.getDetail(id)));
+    }
+
+    @PostMapping("/{id}/assign")
+    @SaCheckPermission("ticket:assign")
+    @Operation(summary = "分派工单")
+    public ResponseEntity<Result<TicketDetailResponse>> assign(
+            @Positive(message = "工单 ID 必须大于 0") @PathVariable Long id,
+            @Valid @RequestBody AssignTicketRequest request) {
+        return ResponseEntity.ok(Result.success(ticketService.assign(id, request)));
+    }
+
+    @PostMapping("/{id}/reassign")
+    @SaCheckPermission("ticket:reassign")
+    @Operation(summary = "改派工单")
+    public ResponseEntity<Result<TicketDetailResponse>> reassign(
+            @Positive(message = "工单 ID 必须大于 0") @PathVariable Long id,
+            @Valid @RequestBody ReassignTicketRequest request) {
+        return ResponseEntity.ok(Result.success(ticketService.reassign(id, request)));
+    }
+
+    @PostMapping("/{id}/start")
+    @SaCheckPermission("ticket:start")
+    @Operation(summary = "开始处理工单")
+    public ResponseEntity<Result<TicketDetailResponse>> start(
+            @Positive(message = "工单 ID 必须大于 0") @PathVariable Long id) {
+        return ResponseEntity.ok(Result.success(ticketService.start(id)));
+    }
+
+    @PostMapping("/{id}/records")
+    @SaCheckPermission("ticket:record:add")
+    @Operation(summary = "添加工单处理记录")
+    public ResponseEntity<Result<TicketDetailResponse>> addRecord(
+            @Positive(message = "工单 ID 必须大于 0") @PathVariable Long id,
+            @Valid @RequestBody AddTicketRecordRequest request) {
+        return ResponseEntity.ok(Result.success(ticketService.addRecord(id, request)));
+    }
+
+    @PostMapping("/{id}/resolve")
+    @SaCheckPermission("ticket:resolve")
+    @Operation(summary = "提交工单解决结果")
+    public ResponseEntity<Result<TicketDetailResponse>> resolve(
+            @Positive(message = "工单 ID 必须大于 0") @PathVariable Long id,
+            @Valid @RequestBody ResolveTicketRequest request) {
+        return ResponseEntity.ok(Result.success(ticketService.resolve(id, request)));
+    }
+
+    @PostMapping("/{id}/confirm")
+    @SaCheckPermission("ticket:confirm")
+    @Operation(summary = "确认工单已解决")
+    public ResponseEntity<Result<TicketDetailResponse>> confirm(
+            @Positive(message = "工单 ID 必须大于 0") @PathVariable Long id,
+            @Valid @RequestBody ConfirmTicketRequest request) {
+        return ResponseEntity.ok(Result.success(ticketService.confirm(id, request)));
+    }
+
+    @PostMapping("/{id}/return")
+    @SaCheckPermission("ticket:confirm")
+    @Operation(summary = "退回工单继续处理")
+    public ResponseEntity<Result<TicketDetailResponse>> returnForRework(
+            @Positive(message = "工单 ID 必须大于 0") @PathVariable Long id,
+            @Valid @RequestBody ReturnTicketRequest request) {
+        return ResponseEntity.ok(Result.success(ticketService.returnForRework(id, request)));
     }
 }

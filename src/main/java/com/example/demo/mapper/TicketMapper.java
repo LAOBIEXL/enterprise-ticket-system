@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Mapper
 public interface TicketMapper extends BaseMapper<Ticket> {
@@ -23,4 +24,21 @@ public interface TicketMapper extends BaseMapper<Ticket> {
     TicketViewRow selectDetailById(@Param("id") Long id);
 
     List<TicketRecordRow> selectRecordsByTicketId(@Param("ticketId") Long ticketId);
+
+    int updateAssignment(
+            @Param("id") Long id,
+            @Param("fromStatus") String fromStatus,
+            @Param("version") Integer version,
+            @Param("toStatus") String toStatus,
+            @Param("assigneeId") Long assigneeId
+    );
+
+    int updateStatus(
+            @Param("id") Long id,
+            @Param("fromStatus") String fromStatus,
+            @Param("version") Integer version,
+            @Param("toStatus") String toStatus,
+            @Param("resolvedTime") LocalDateTime resolvedTime,
+            @Param("closedTime") LocalDateTime closedTime
+    );
 }

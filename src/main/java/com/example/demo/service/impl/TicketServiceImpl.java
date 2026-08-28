@@ -4,6 +4,12 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.example.demo.common.PageResponse;
 import com.example.demo.converter.TicketConverter;
 import com.example.demo.dto.CreateTicketRequest;
+import com.example.demo.dto.AddTicketRecordRequest;
+import com.example.demo.dto.AssignTicketRequest;
+import com.example.demo.dto.ConfirmTicketRequest;
+import com.example.demo.dto.ReassignTicketRequest;
+import com.example.demo.dto.ResolveTicketRequest;
+import com.example.demo.dto.ReturnTicketRequest;
 import com.example.demo.dto.TicketDetailResponse;
 import com.example.demo.dto.TicketQuery;
 import com.example.demo.dto.TicketSummaryResponse;
@@ -32,6 +38,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -147,6 +154,118 @@ public class TicketServiceImpl implements TicketService {
         return ticketConverter.toDetail(row, ticketMapper.selectRecordsByTicketId(id));
     }
 
+    @Override
+    @Transactional
+    public TicketDetailResponse assign(Long id, AssignTicketRequest request) {
+        Long operatorId = currentUserId();
+        TicketViewRow current = requireTicket(id);
+        requireState(current, TicketStatus.PENDING);
+        requireTechnicalAssignee(request.assigneeId());
+
+        updateAssignment(current, TicketStatus.ASSIGNED, request.assigneeId());
+        appendRecord(
+                current, operatorId, request.assigneeId(), TicketAction.ASSIGN,
+                TicketStatus.ASSIGNED, defaultText(request.remark(), "分派工单")
+        );
+        return loadDetail(id);
+    }
+
+    @Override
+    @Transactional
+    public TicketDetailResponse reassign(Long id, ReassignTicketRequest request) {
+        Long operatorId = currentUserId();
+        TicketViewRow current = requireTicket(id);
+        requireState(current, TicketStatus.ASSIGNED, TicketStatus.PROCESSING);
+        if (request.assigneeId().equals(current.getAssigneeId())) {
+            throw new BusinessConflictException("改派目标不能与当前处理人相同");
+        }
+        requireTechnicalAssignee(request.assigneeId());
+
+        updateAssignment(current, TicketStatus.ASSIGNED, request.assigneeId());
+        appendRecord(
+                current, operatorId, request.assigneeId(), TicketAction.REASSIGN,
+                TicketStatus.ASSIGNED, request.reason().trim()
+        );
+        return loadDetail(id);
+    }
+
+    @Override
+    @Transactional
+    public TicketDetailResponse start(Long id) {
+        Long operatorId = currentUserId();
+        TicketViewRow current = requireTicket(id);
+        requireState(current, TicketStatus.ASSIGNED);
+        requireCurrentAssignee(current, operatorId);
+
+        updateStatus(current, TicketStatus.PROCESSING, null, null);
+        appendRecord(current, operatorId, null, TicketAction.START, TicketStatus.PROCESSING, "开始处理工单");
+        return loadDetail(id);
+    }
+
+    @Override
+    @Transactional
+    public TicketDetailResponse addRecord(Long id, AddTicketRecordRequest request) {
+        Long operatorId = currentUserId();
+        TicketViewRow current = requireTicket(id);
+        requireState(current, TicketStatus.PROCESSING);
+        requireCurrentAssignee(current, operatorId);
+
+        updateStatus(current, TicketStatus.PROCESSING, null, null);
+        appendRecord(
+                current, operatorId, null, TicketAction.ADD_RECORD,
+                TicketStatus.PROCESSING, request.content().trim()
+        );
+        return loadDetail(id);
+    }
+
+    @Override
+    @Transactional
+    public TicketDetailResponse resolve(Long id, ResolveTicketRequest request) {
+        Long operatorId = currentUserId();
+        TicketViewRow current = requireTicket(id);
+        requireState(current, TicketStatus.PROCESSING);
+        requireCurrentAssignee(current, operatorId);
+
+        updateStatus(current, TicketStatus.WAIT_CONFIRM, LocalDateTime.now(ZoneOffset.UTC), null);
+        appendRecord(
+                current, operatorId, null, TicketAction.RESOLVE,
+                TicketStatus.WAIT_CONFIRM, request.solution().trim()
+        );
+        return loadDetail(id);
+    }
+
+    @Override
+    @Transactional
+    public TicketDetailResponse confirm(Long id, ConfirmTicketRequest request) {
+        Long operatorId = currentUserId();
+        TicketViewRow current = requireTicket(id);
+        requireState(current, TicketStatus.WAIT_CONFIRM);
+        requireRequester(current, operatorId);
+
+        updateStatus(current, TicketStatus.CLOSED, null, LocalDateTime.now(ZoneOffset.UTC));
+        appendRecord(
+                current, operatorId, null, TicketAction.CONFIRM,
+                TicketStatus.CLOSED, defaultText(request.remark(), "确认工单已解决")
+        );
+        return loadDetail(id);
+    }
+
+    @Override
+    @Transactional
+    public TicketDetailResponse returnForRework(Long id, ReturnTicketRequest request) {
+        Long operatorId = currentUserId();
+        TicketViewRow current = requireTicket(id);
+        requireState(current, TicketStatus.WAIT_CONFIRM);
+        requireRequester(current, operatorId);
+
+        updateStatus(current, TicketStatus.PROCESSING, null, null);
+        appendRecord(
+                current, operatorId, null, TicketAction.RETURN,
+                TicketStatus.PROCESSING, request.reason().trim()
+        );
+        return loadDetail(id);
+    }
+
     private PageResponse<TicketSummaryResponse> query(TicketQuery query, Long requesterId, Long assigneeId) {
         TicketQueryCriteria criteria = new TicketQueryCriteria(
                 query.status(), query.categoryId(), requesterId, assigneeId, normalizeKeyword(query.keyword())
@@ -159,6 +278,86 @@ public class TicketServiceImpl implements TicketService {
                 : ticketMapper.selectPageByCriteria(criteria, (long) (pageNum - 1) * pageSize, pageSize)
                 .stream().map(ticketConverter::toSummary).toList();
         return PageResponse.of(records, total, pageNum, pageSize);
+    }
+
+    private void updateAssignment(TicketViewRow current, TicketStatus toStatus, Long assigneeId) {
+        int updated = ticketMapper.updateAssignment(
+                current.getId(), current.getStatus(), current.getVersion(), toStatus.name(), assigneeId
+        );
+        requireUpdated(updated);
+    }
+
+    private void updateStatus(
+            TicketViewRow current,
+            TicketStatus toStatus,
+            LocalDateTime resolvedTime,
+            LocalDateTime closedTime) {
+        int updated = ticketMapper.updateStatus(
+                current.getId(), current.getStatus(), current.getVersion(),
+                toStatus.name(), resolvedTime, closedTime
+        );
+        requireUpdated(updated);
+    }
+
+    private void requireUpdated(int updated) {
+        if (updated != 1) {
+            throw new BusinessConflictException("工单状态已变化，请刷新后重试");
+        }
+    }
+
+    private void appendRecord(
+            TicketViewRow current,
+            Long operatorId,
+            Long targetUserId,
+            TicketAction action,
+            TicketStatus toStatus,
+            String content) {
+        TicketRecord record = new TicketRecord();
+        record.setTicketId(current.getId());
+        record.setOperatorId(operatorId);
+        record.setTargetUserId(targetUserId);
+        record.setAction(action.name());
+        record.setFromStatus(current.getStatus());
+        record.setToStatus(toStatus.name());
+        record.setContent(content);
+        ticketRecordMapper.insert(record);
+    }
+
+    private void requireState(TicketViewRow current, TicketStatus... allowedStatuses) {
+        for (TicketStatus allowedStatus : allowedStatuses) {
+            if (allowedStatus.name().equals(current.getStatus())) {
+                return;
+            }
+        }
+        throw new BusinessConflictException("当前工单状态不允许执行该操作");
+    }
+
+    private void requireCurrentAssignee(TicketViewRow current, Long operatorId) {
+        if (!operatorId.equals(current.getAssigneeId())) {
+            throw new DataScopeForbiddenException("只有当前处理人可以执行该操作");
+        }
+    }
+
+    private void requireRequester(TicketViewRow current, Long operatorId) {
+        if (!operatorId.equals(current.getRequesterId())) {
+            throw new DataScopeForbiddenException("只有工单提交人可以执行该操作");
+        }
+    }
+
+    private void requireTechnicalAssignee(Long assigneeId) {
+        SysUser assignee = sysUserMapper.selectById(assigneeId);
+        if (assignee == null) {
+            throw new ResourceNotFoundException("目标处理人不存在");
+        }
+        List<String> roles = sysUserMapper.selectEnabledRoleCodesByUserId(assigneeId);
+        boolean technicalRole = roles.contains("TECHNICIAN") || roles.contains("SUPPORT_MANAGER");
+        if (!Integer.valueOf(ENABLED).equals(assignee.getStatus()) || !technicalRole) {
+            throw new BusinessConflictException("目标处理人已停用或不具备技术处理角色");
+        }
+    }
+
+    private String defaultText(String value, String defaultValue) {
+        return value == null || value.isBlank() ? defaultValue : value.trim();
     }
 
     private TicketDetailResponse findIdempotentResult(String redisKey, Long requesterId) {

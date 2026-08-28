@@ -4,6 +4,12 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaMode;
 import com.example.demo.common.Result;
 import com.example.demo.dto.CreateTicketRequest;
+import com.example.demo.dto.AddTicketRecordRequest;
+import com.example.demo.dto.AssignTicketRequest;
+import com.example.demo.dto.ConfirmTicketRequest;
+import com.example.demo.dto.ReassignTicketRequest;
+import com.example.demo.dto.ResolveTicketRequest;
+import com.example.demo.dto.ReturnTicketRequest;
 import com.example.demo.dto.TicketDetailResponse;
 import com.example.demo.service.TicketService;
 import org.junit.jupiter.api.Test;
@@ -46,6 +52,26 @@ class TicketControllerTests {
                 "ticket:read:own", "ticket:read:assigned", "ticket:read:all"
         );
         assertThat(permission.mode()).isEqualTo(SaMode.OR);
+    }
+
+    @Test
+    void shouldDeclarePermissionForEveryStateAction() throws NoSuchMethodException {
+        assertPermission("assign", "ticket:assign", Long.class, AssignTicketRequest.class);
+        assertPermission("reassign", "ticket:reassign", Long.class, ReassignTicketRequest.class);
+        assertPermission("start", "ticket:start", Long.class);
+        assertPermission("addRecord", "ticket:record:add", Long.class, AddTicketRecordRequest.class);
+        assertPermission("resolve", "ticket:resolve", Long.class, ResolveTicketRequest.class);
+        assertPermission("confirm", "ticket:confirm", Long.class, ConfirmTicketRequest.class);
+        assertPermission("returnForRework", "ticket:confirm", Long.class, ReturnTicketRequest.class);
+    }
+
+    private void assertPermission(String method, String expected, Class<?>... parameterTypes)
+            throws NoSuchMethodException {
+        SaCheckPermission permission = TicketController.class
+                .getMethod(method, parameterTypes)
+                .getAnnotation(SaCheckPermission.class);
+        assertThat(permission).isNotNull();
+        assertThat(permission.value()).containsExactly(expected);
     }
 
     private TicketDetailResponse detail(String id) {

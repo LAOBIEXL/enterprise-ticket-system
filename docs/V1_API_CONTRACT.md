@@ -211,15 +211,15 @@ Java 类型统一为：
 
 ### 6.2 状态动作
 
-| 方法与路径 | 权限 | 合法状态 | 请求 DTO |
-| --- | --- | --- | --- |
-| `POST /tickets/{id}/assign` | `ticket:assign` | `PENDING -> ASSIGNED` | `AssignTicketRequest` |
-| `POST /tickets/{id}/reassign` | `ticket:reassign` | `ASSIGNED -> ASSIGNED` 或 `PROCESSING -> ASSIGNED` | `ReassignTicketRequest` |
-| `POST /tickets/{id}/start` | `ticket:start` | `ASSIGNED -> PROCESSING` | 无 |
-| `POST /tickets/{id}/records` | `ticket:record:add` | `PROCESSING -> PROCESSING` | `AddTicketRecordRequest` |
-| `POST /tickets/{id}/resolve` | `ticket:resolve` | `PROCESSING -> WAIT_CONFIRM` | `ResolveTicketRequest` |
-| `POST /tickets/{id}/confirm` | `ticket:confirm` | `WAIT_CONFIRM -> CLOSED` | `ConfirmTicketRequest` |
-| `POST /tickets/{id}/return` | `ticket:confirm` | `WAIT_CONFIRM -> PROCESSING` | `ReturnTicketRequest` |
+| 方法与路径 | 权限 | 合法状态 | 请求 DTO | 响应 |
+| --- | --- | --- | --- | --- |
+| `POST /tickets/{id}/assign` | `ticket:assign` | `PENDING -> ASSIGNED` | `AssignTicketRequest` | `Result<TicketDetailResponse>` |
+| `POST /tickets/{id}/reassign` | `ticket:reassign` | `ASSIGNED -> ASSIGNED` 或 `PROCESSING -> ASSIGNED` | `ReassignTicketRequest` | 同上 |
+| `POST /tickets/{id}/start` | `ticket:start` | `ASSIGNED -> PROCESSING` | 无 | 同上 |
+| `POST /tickets/{id}/records` | `ticket:record:add` | `PROCESSING -> PROCESSING` | `AddTicketRecordRequest` | 同上 |
+| `POST /tickets/{id}/resolve` | `ticket:resolve` | `PROCESSING -> WAIT_CONFIRM` | `ResolveTicketRequest` | 同上 |
+| `POST /tickets/{id}/confirm` | `ticket:confirm` | `WAIT_CONFIRM -> CLOSED` | `ConfirmTicketRequest` | 同上 |
+| `POST /tickets/{id}/return` | `ticket:confirm` | `WAIT_CONFIRM -> PROCESSING` | `ReturnTicketRequest` | 同上 |
 
 补充约束：
 
