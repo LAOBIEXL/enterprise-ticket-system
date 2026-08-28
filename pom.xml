@@ -107,6 +107,12 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
+        <!-- 生产健康探针与基础运行信息 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- Sa-Token 权限认证（Spring Boot 4） -->
         <dependency>
             <groupId>cn.dev33</groupId>

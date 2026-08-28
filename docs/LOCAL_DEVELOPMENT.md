@@ -176,3 +176,22 @@ $env:SMOKE_BASE_URL = "http://127.0.0.1:8080/dev-api"
 
 脚本只执行登录和 GET 请求，不创建、修改或删除业务数据；登录产生的 Sa-Token 会话会按配置写入 Redis。
 可通过 RedisInsight 或 `redis-cli -n 1 --scan --pattern 'satoken*'` 查看会话键（不要复制 Token 值到日志或文档）。
+
+## 9. 生产 profile 启动
+
+生产环境必须显式选择 `prod` profile，并提供以下环境变量：
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE = "prod"
+$env:DB_URL = "jdbc:mysql://db.example.internal:3306/enterprise_ticket_prod?characterEncoding=UTF-8&serverTimezone=UTC"
+$env:DB_USERNAME = "ticket_app"
+$env:DB_PASSWORD = "由部署平台注入的密钥"
+$env:REDIS_HOST = "redis.example.internal"
+$env:REDIS_PORT = "6379"
+$env:REDIS_PASSWORD = "由部署平台注入的密钥"
+.\mvnw.cmd spring-boot:run
+```
+
+默认端口为 9090、上下文为 `/prod-api`；负载均衡器可探测
+`/prod-api/actuator/health/liveness` 和 `/prod-api/actuator/health/readiness`。
+生产环境仅暴露 `health`、`info`，健康详情和 Swagger/OpenAPI 均关闭。
