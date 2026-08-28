@@ -111,6 +111,40 @@ src/test/java/com/example/demo/migration/FlywayMigrationTests.java
 
 该测试只查询一个明确不存在的用户，不插入、更新或删除开发数据。
 
+完整只读 Mapper 契约测试还会检查角色权限联表、用户角色联表和工单分页/详情映射：
+
+```powershell
+.\mvnw.cmd "-Dtest=DatabaseMapperIntegrationTests" "-Ddatabase.mapper.test.enabled=true" test
+```
+
+该测试同样不会写入、更新或删除开发数据。涉及状态更新和事务回滚的写入测试必须使用隔离数据库，不允许连接唯一的开发库。
+
+工单条件更新测试会创建或复用专用的 `enterprise_ticket_it` 数据库，执行 Flyway 后在自动回滚事务中验证“状态 + 版本号”并发保护。该测试不会删除数据库，也不会把测试记录提交到数据库：
+
+```powershell
+.\mvnw.cmd "-Dtest=TicketTransactionIntegrationTests" `
+  "-Ddatabase.transaction.test.enabled=true" `
+  "-Ddatabase.transaction.test.admin-url=jdbc:mysql://127.0.0.1:3306/?serverTimezone=UTC" `
+  "-Ddatabase.transaction.test.url=jdbc:mysql://127.0.0.1:3306/enterprise_ticket_it?serverTimezone=UTC" `
+  "-Ddatabase.transaction.test.user=root" `
+  "-Ddatabase.transaction.test.password=本地密码" test
+```
+
+若应用账号没有 `CREATE DATABASE` 权限，可使用隔离 MySQL 容器的 root 账号创建数据库，
+同时让测试数据源继续使用最小权限的应用账号：
+
+```powershell
+  "-Ddatabase.transaction.test.admin-user=root" `
+  "-Ddatabase.transaction.test.admin-password=隔离容器 root 密码"
+```
+
+`admin-user`/`admin-password` 只用于 `CREATE DATABASE IF NOT EXISTS`，不会用于业务查询；
+省略时默认复用测试数据源账号。
+
+如果隔离容器已经通过 `MYSQL_DATABASE=enterprise_ticket_it` 创建了数据库，可以追加
+`-Ddatabase.transaction.test.create-schema=false`，这样测试只使用业务账号连接已有空库，
+由 Flyway 执行表结构迁移，不要求业务账号具备建库权限。
+
 ## 7. 首个管理员初始化
 
 应用默认不会创建管理员。仅在本地或受控环境首次初始化时，临时设置以下变量：
