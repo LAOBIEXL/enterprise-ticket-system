@@ -158,3 +158,21 @@ $env:BOOTSTRAP_ADMIN_PASSWORD = "至少 12 位的本地强密码"
 启动成功后，初始化器会创建一个 `SYSTEM_ADMIN` 用户并写入 BCrypt 哈希。重复启动不会重复创建；确认登录成功后应立即清除当前 PowerShell 中的 `BOOTSTRAP_ADMIN_PASSWORD`，并将 `BOOTSTRAP_ADMIN_ENABLED` 恢复为 `false`。
 
 密码不会写入迁移文件、日志、Swagger 或 Git。
+
+## 8. 真实依赖联调
+
+在 MySQL 和 Redis 已启动、应用运行后，可以使用不回显密码和 Token 的冒烟脚本验证登录、
+请求头认证、基础数据、管理端查询以及 OpenAPI 安全方案：
+
+```powershell
+Get-Content .env.local | ForEach-Object {
+  if ($_ -match '^([A-Za-z_][A-Za-z0-9_]*)=(.*)$') {
+    [Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+  }
+}
+$env:SMOKE_BASE_URL = "http://127.0.0.1:8080/dev-api"
+.\scripts\smoke-api.ps1
+```
+
+脚本只执行登录和 GET 请求，不创建、修改或删除业务数据；登录产生的 Sa-Token 会话会按配置写入 Redis。
+可通过 RedisInsight 或 `redis-cli -n 1 --scan --pattern 'satoken*'` 查看会话键（不要复制 Token 值到日志或文档）。
