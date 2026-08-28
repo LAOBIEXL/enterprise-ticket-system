@@ -312,6 +312,12 @@ V1.0 不提供部门物理删除接口。
 | `PUT /admin/ticket-categories/{id}` | `ticket:category:manage` | 修改分类 |
 | `PATCH /admin/ticket-categories/{id}/status` | `ticket:category:manage` | 启停分类 |
 
+角色新增和修改请求包含 `code`、`name`、`description`；角色编码统一转为大写并保证唯一，新角色默认启用。角色响应包含完整权限摘要。
+
+`PUT /admin/roles/{id}/permissions` 使用 `{ "permissionIds": [1, 2] }` 完整替换角色权限，空集合表示清空。权限必须存在且启用。权限编码由后端业务能力定义，因此 V1.0 只提供权限定义查询，不提供任意新增权限编码接口。
+
+为防止管理员在操作过程中失去管理权限，不能停用或修改当前账号正在使用角色的授权状态；仍分配给启用用户的角色不能停用。角色权限变化后，使用该角色的账号已有会话立即失效，并在重新登录时加载最新 RBAC 数据。
+
 `GET /ticket-categories` 与部门列表使用相同的轻量结构，只返回启用分类，并按 `sortOrder`、`id` 升序排列。
 
 管理端分类分页查询参数为 `keyword`、`status`、`pageNum` 和 `pageSize`。`keyword` 模糊匹配编码或名称，`status` 只能为 `0` 或 `1`，每页最多 100 条。
