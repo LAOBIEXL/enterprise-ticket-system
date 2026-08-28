@@ -96,4 +96,21 @@
         ORDER BY permission.code
     </select>
 
+    <select id="selectRolesByUserId" resultType="com.example.demo.mapper.model.RoleReferenceRow">
+        SELECT role.id, role.code, role.name
+        FROM sys_user_role user_role
+                 INNER JOIN sys_role role ON role.id = user_role.role_id
+        WHERE user_role.user_id = #{userId}
+        ORDER BY role.code
+    </select>
+
+    <delete id="deleteUserRoles">
+        DELETE FROM sys_user_role WHERE user_id = #{userId}
+    </delete>
+
+    <insert id="insertUserRoleWithCreator">
+        INSERT INTO sys_user_role (user_id, role_id, create_by)
+        VALUES (#{userId}, #{roleId}, #{createBy})
+    </insert>
+
 </mapper>

@@ -2,6 +2,7 @@ package com.example.demo.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.example.demo.entity.SysUser;
+import com.example.demo.mapper.model.RoleReferenceRow;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -28,4 +29,14 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
     List<String> selectEnabledRoleCodesByUserId(@Param("userId") Long userId);
 
     List<String> selectEnabledPermissionCodesByUserId(@Param("userId") Long userId);
+
+    List<RoleReferenceRow> selectRolesByUserId(@Param("userId") Long userId);
+
+    int deleteUserRoles(@Param("userId") Long userId);
+
+    int insertUserRoleWithCreator(
+            @Param("userId") Long userId,
+            @Param("roleId") Long roleId,
+            @Param("createBy") Long createBy
+    );
 }
