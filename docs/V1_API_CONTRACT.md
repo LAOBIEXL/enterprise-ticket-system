@@ -257,6 +257,16 @@ V1.0 使用新增、修改和启停，不提供物理删除接口。
 | `PUT /admin/departments/{id}` | `department:manage` | 修改部门 |
 | `PATCH /admin/departments/{id}/status` | `department:manage` | 启用或停用部门 |
 
+`GET /departments` 仅返回启用数据，并按 `sortOrder`、`id` 升序排列。列表项使用统一的轻量结构：
+
+```json
+{
+  "id": "5",
+  "code": "TECHNOLOGY",
+  "name": "技术部"
+}
+```
+
 ### 7.2 用户
 
 | 方法与路径 | 权限 | 用途 |
@@ -286,6 +296,20 @@ V1.0 使用新增、修改和启停，不提供物理删除接口。
 | `POST /admin/ticket-categories` | `ticket:category:manage` | 新增分类 |
 | `PUT /admin/ticket-categories/{id}` | `ticket:category:manage` | 修改分类 |
 | `PATCH /admin/ticket-categories/{id}/status` | `ticket:category:manage` | 启停分类 |
+
+`GET /ticket-categories` 与部门列表使用相同的轻量结构，只返回启用分类，并按 `sortOrder`、`id` 升序排列。
+
+管理端分类分页查询参数为 `keyword`、`status`、`pageNum` 和 `pageSize`。`keyword` 模糊匹配编码或名称，`status` 只能为 `0` 或 `1`，每页最多 100 条。
+
+新增和修改请求包含 `code`、`name`、`description`、`sortOrder`；分类编码统一转为大写并保证唯一。新增分类默认启用，成功返回 HTTP 201；编码冲突返回 HTTP 409；目标分类不存在返回 HTTP 404。启停请求体如下：
+
+```json
+{
+  "status": 0
+}
+```
+
+V1.0 不提供分类物理删除接口；已被历史工单引用的分类应通过停用退出可选列表。
 
 权限编码由后端业务能力定义，V1.0 不允许管理员创建一个代码中不存在的权限编码。
 
