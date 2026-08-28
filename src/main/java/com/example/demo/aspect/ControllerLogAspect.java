@@ -3,6 +3,7 @@ package com.example.demo.aspect;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import com.example.demo.dto.LoginRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -69,14 +70,21 @@ public class ControllerLogAspect {
         return null;
     }
 
-    private String formatArguments(Object[] arguments) {
+    String formatArguments(Object[] arguments) {
         if (arguments == null || arguments.length == 0) {
             return "[]";
         }
         return Arrays.stream(arguments)
                 .filter(argument -> !(argument instanceof ServletRequest))
                 .filter(argument -> !(argument instanceof ServletResponse))
-                .map(String::valueOf)
+                .map(this::formatArgument)
                 .collect(Collectors.joining(", ", "[", "]"));
+    }
+
+    private String formatArgument(Object argument) {
+        if (argument instanceof LoginRequest) {
+            return "LoginRequest[REDACTED]";
+        }
+        return String.valueOf(argument);
     }
 }

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.SysRoleMapper">
+
+    <select id="selectPermissionsByRoleId" resultType="com.example.demo.mapper.model.PermissionReferenceRow">
+        SELECT permission.id, permission.code, permission.name
+        FROM sys_role_permission role_permission
+                 INNER JOIN sys_permission permission ON permission.id = role_permission.permission_id
+        WHERE role_permission.role_id = #{roleId}
+        ORDER BY permission.code
+    </select>
+
+    <delete id="deleteRolePermissions">
+        DELETE FROM sys_role_permission WHERE role_id = #{roleId}
+    </delete>
+
+    <insert id="insertRolePermission">
+        INSERT INTO sys_role_permission (role_id, permission_id, create_by)
+        VALUES (#{roleId}, #{permissionId}, #{createBy})
+    </insert>
+
+    <select id="countEnabledUsersByRoleId" resultType="long">
+        SELECT COUNT(DISTINCT user_account.id)
+        FROM sys_user_role user_role
+                 INNER JOIN sys_user user_account ON user_account.id = user_role.user_id
+        WHERE user_role.role_id = #{roleId}
+          AND user_account.status = 1
+    </select>
+
+    <select id="countUserRole" resultType="long">
+        SELECT COUNT(*)
+        FROM sys_user_role
+        WHERE user_id = #{userId}
+          AND role_id = #{roleId}
+    </select>
+
+    <select id="selectUserIdsByRoleId" resultType="long">
+        SELECT user_id
+        FROM sys_user_role
+        WHERE role_id = #{roleId}
+        ORDER BY user_id
+    </select>
+
+</mapper>

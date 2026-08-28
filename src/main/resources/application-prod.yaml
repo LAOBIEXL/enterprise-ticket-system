@@ -1,4 +1,49 @@
 server:
   servlet:
     context-path: /prod-api
-  port: 9090
+  port: ${SERVER_PORT:9090}
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      database: ${REDIS_DATABASE:1}
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: ${REDIS_TIMEOUT:2s}
+  flyway:
+    # 生产库必须显式纳入迁移，不对未知旧结构自动基线。
+    baseline-on-migrate: false
+
+# 仅暴露不含敏感详情的健康与基础信息端点，便于负载均衡器探活。
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: false
+
+# 生产环境不提供交互式 API 文档，避免暴露内部接口结构。
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

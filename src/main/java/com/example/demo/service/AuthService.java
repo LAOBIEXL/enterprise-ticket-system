@@ -1,5 +1,7 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.CurrentUserResponse;
+import com.example.demo.dto.LoginRequest;
 import com.example.demo.dto.LoginResponse;
 import com.example.demo.dto.LoginStatusResponse;
 
@@ -9,9 +11,19 @@ import com.example.demo.dto.LoginStatusResponse;
 public interface AuthService {
 
     /**
-     * 根据用户 ID 创建登录会话；用户不存在时返回 null。
+     * 校验账号密码并创建登录会话。
      */
-    LoginResponse login(Long userId);
+    LoginResponse login(LoginRequest request);
+
+    /**
+     * 注销当前请求携带的 Token。
+     */
+    void logout();
+
+    /**
+     * 获取当前登录用户、角色和权限。
+     */
+    CurrentUserResponse getCurrentUser();
 
     /**
      * 获取当前请求携带 Token 的登录状态。

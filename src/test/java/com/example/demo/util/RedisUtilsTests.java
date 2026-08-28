@@ -44,6 +44,19 @@ class RedisUtilsTests {
     }
 
     @Test
+    void shouldSetValueOnlyWhenKeyIsAbsent() {
+        when(valueOperations.setIfAbsent("ticket:create:1:key", "PROCESSING", 5, TimeUnit.MINUTES))
+                .thenReturn(true);
+
+        boolean acquired = redisUtils.setIfAbsent(
+                "ticket:create:1:key", "PROCESSING", 5, TimeUnit.MINUTES
+        );
+
+        assertThat(acquired).isTrue();
+        verify(valueOperations).setIfAbsent("ticket:create:1:key", "PROCESSING", 5, TimeUnit.MINUTES);
+    }
+
+    @Test
     void shouldDelegateHashOperations() {
         when(hashOperations.get("user:1", "name")).thenReturn("Jack");
 

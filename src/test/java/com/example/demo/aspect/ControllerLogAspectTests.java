@@ -1,5 +1,6 @@
 package com.example.demo.aspect;
 
+import com.example.demo.dto.LoginRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.Signature;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,15 @@ class ControllerLogAspectTests {
 
         assertEquals(exception, actual);
         verify(joinPoint).proceed();
+    }
+
+    @Test
+    void shouldRedactLoginRequestArguments() {
+        String arguments = aspect.formatArguments(
+                new Object[]{new LoginRequest("admin", "secret-password")}
+        );
+
+        assertEquals("[LoginRequest[REDACTED]]", arguments);
     }
 
     private ProceedingJoinPoint createJoinPoint() {

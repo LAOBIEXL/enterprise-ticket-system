@@ -211,15 +211,15 @@ Java 类型统一为：
 
 ### 6.2 状态动作
 
-| 方法与路径 | 权限 | 合法状态 | 请求 DTO |
-| --- | --- | --- | --- |
-| `POST /tickets/{id}/assign` | `ticket:assign` | `PENDING -> ASSIGNED` | `AssignTicketRequest` |
-| `POST /tickets/{id}/reassign` | `ticket:reassign` | `ASSIGNED -> ASSIGNED` 或 `PROCESSING -> ASSIGNED` | `ReassignTicketRequest` |
-| `POST /tickets/{id}/start` | `ticket:start` | `ASSIGNED -> PROCESSING` | 无 |
-| `POST /tickets/{id}/records` | `ticket:record:add` | `PROCESSING -> PROCESSING` | `AddTicketRecordRequest` |
-| `POST /tickets/{id}/resolve` | `ticket:resolve` | `PROCESSING -> WAIT_CONFIRM` | `ResolveTicketRequest` |
-| `POST /tickets/{id}/confirm` | `ticket:confirm` | `WAIT_CONFIRM -> CLOSED` | `ConfirmTicketRequest` |
-| `POST /tickets/{id}/return` | `ticket:confirm` | `WAIT_CONFIRM -> PROCESSING` | `ReturnTicketRequest` |
+| 方法与路径 | 权限 | 合法状态 | 请求 DTO | 响应 |
+| --- | --- | --- | --- | --- |
+| `POST /tickets/{id}/assign` | `ticket:assign` | `PENDING -> ASSIGNED` | `AssignTicketRequest` | `Result<TicketDetailResponse>` |
+| `POST /tickets/{id}/reassign` | `ticket:reassign` | `ASSIGNED -> ASSIGNED` 或 `PROCESSING -> ASSIGNED` | `ReassignTicketRequest` | 同上 |
+| `POST /tickets/{id}/start` | `ticket:start` | `ASSIGNED -> PROCESSING` | 无 | 同上 |
+| `POST /tickets/{id}/records` | `ticket:record:add` | `PROCESSING -> PROCESSING` | `AddTicketRecordRequest` | 同上 |
+| `POST /tickets/{id}/resolve` | `ticket:resolve` | `PROCESSING -> WAIT_CONFIRM` | `ResolveTicketRequest` | 同上 |
+| `POST /tickets/{id}/confirm` | `ticket:confirm` | `WAIT_CONFIRM -> CLOSED` | `ConfirmTicketRequest` | 同上 |
+| `POST /tickets/{id}/return` | `ticket:confirm` | `WAIT_CONFIRM -> PROCESSING` | `ReturnTicketRequest` | 同上 |
 
 补充约束：
 
@@ -257,6 +257,22 @@ V1.0 使用新增、修改和启停，不提供物理删除接口。
 | `PUT /admin/departments/{id}` | `department:manage` | 修改部门 |
 | `PATCH /admin/departments/{id}/status` | `department:manage` | 启用或停用部门 |
 
+`GET /departments` 仅返回启用数据，并按 `sortOrder`、`id` 升序排列。列表项使用统一的轻量结构：
+
+```json
+{
+  "id": "5",
+  "code": "TECHNOLOGY",
+  "name": "技术部"
+}
+```
+
+管理端部门分页查询参数为 `keyword`、`status`、`pageNum` 和 `pageSize`。`keyword` 模糊匹配编码或名称，`status` 只能为 `0` 或 `1`，每页最多 100 条。
+
+新增和修改请求包含 `code`、`name`、`sortOrder`；部门编码统一转为大写并保证唯一。新增部门默认启用，成功返回 HTTP 201；编码冲突返回 HTTP 409；目标部门不存在返回 HTTP 404。启停接口使用统一的 `{ "status": 0 }` 请求体。为避免启用用户失去有效组织归属，部门下仍有启用用户时，停用操作返回 HTTP 409。
+
+V1.0 不提供部门物理删除接口。
+
 ### 7.2 用户
 
 | 方法与路径 | 权限 | 用途 |
@@ -270,6 +286,15 @@ V1.0 使用新增、修改和启停，不提供物理删除接口。
 | `PUT /admin/users/{id}/password` | `user:manage` | 管理员重置密码 |
 
 `CreateUserRequest` 包含 `departmentId`、`username`、`initialPassword`、`name`、`email` 和 `mobile`。密码只接收一次，哈希后入库，不在响应中返回。
+
+用户分页支持 `keyword`、`departmentId`、`status`、`pageNum` 和 `pageSize`；关键词模糊匹配用户名、姓名或邮箱。响应包含部门摘要、角色摘要、状态和审计时间，不包含 `passwordHash`。
+
+- 用户名为 3~64 位，以字母开头，只允许字母、数字、点、下划线和连字符，创建后不可修改；
+- 初始密码和重置密码为 12~64 个字符，服务端使用 BCrypt 哈希后保存；
+- 创建或调岗时目标部门必须启用；用户名或非空邮箱重复返回 HTTP 409；
+- `{ "roleIds": [1, 2] }` 表示完整替换角色集合，空集合表示移除全部角色，角色必须存在且已启用；
+- 停用账号、替换角色或重置密码后，目标账号已有 Sa-Token 会话立即失效；
+- 为避免当前管理员把自己锁在系统外，不能停用当前登录账号，也不能修改当前账号的角色。
 
 ### 7.3 角色、权限和分类
 
@@ -286,6 +311,26 @@ V1.0 使用新增、修改和启停，不提供物理删除接口。
 | `POST /admin/ticket-categories` | `ticket:category:manage` | 新增分类 |
 | `PUT /admin/ticket-categories/{id}` | `ticket:category:manage` | 修改分类 |
 | `PATCH /admin/ticket-categories/{id}/status` | `ticket:category:manage` | 启停分类 |
+
+角色新增和修改请求包含 `code`、`name`、`description`；角色编码统一转为大写并保证唯一，新角色默认启用。角色响应包含完整权限摘要。
+
+`PUT /admin/roles/{id}/permissions` 使用 `{ "permissionIds": [1, 2] }` 完整替换角色权限，空集合表示清空。权限必须存在且启用。权限编码由后端业务能力定义，因此 V1.0 只提供权限定义查询，不提供任意新增权限编码接口。
+
+为防止管理员在操作过程中失去管理权限，不能停用或修改当前账号正在使用角色的授权状态；仍分配给启用用户的角色不能停用。角色权限变化后，使用该角色的账号已有会话立即失效，并在重新登录时加载最新 RBAC 数据。
+
+`GET /ticket-categories` 与部门列表使用相同的轻量结构，只返回启用分类，并按 `sortOrder`、`id` 升序排列。
+
+管理端分类分页查询参数为 `keyword`、`status`、`pageNum` 和 `pageSize`。`keyword` 模糊匹配编码或名称，`status` 只能为 `0` 或 `1`，每页最多 100 条。
+
+新增和修改请求包含 `code`、`name`、`description`、`sortOrder`；分类编码统一转为大写并保证唯一。新增分类默认启用，成功返回 HTTP 201；编码冲突返回 HTTP 409；目标分类不存在返回 HTTP 404。启停请求体如下：
+
+```json
+{
+  "status": 0
+}
+```
+
+V1.0 不提供分类物理删除接口；已被历史工单引用的分类应通过停用退出可选列表。
 
 权限编码由后端业务能力定义，V1.0 不允许管理员创建一个代码中不存在的权限编码。
 

@@ -22,6 +22,7 @@ public class SaTokenInterceptorConfig implements WebMvcConfigurer {
                         "/swagger-ui.html",
                         "/v3/api-docs/**",
                         "/webjars/**",
+                        "/actuator/**",
                         "/error"
                 );
     }
