@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.TicketMapper">
+
+    <sql id="ticketJoin">
+        FROM ticket ticket_item
+        INNER JOIN ticket_category category ON category.id = ticket_item.category_id
+        INNER JOIN sys_user requester ON requester.id = ticket_item.requester_id
+        INNER JOIN sys_department requester_department ON requester_department.id = ticket_item.requester_department_id
+        LEFT JOIN sys_user assignee ON assignee.id = ticket_item.assignee_id
+    </sql>
+
+    <sql id="criteriaWhere">
+        <where>
+            <if test="criteria.status != null and criteria.status != ''">
+                AND ticket_item.status = #{criteria.status}
+            </if>
+            <if test="criteria.categoryId != null">
+                AND ticket_item.category_id = #{criteria.categoryId}
+            </if>
+            <if test="criteria.requesterId != null">
+                AND ticket_item.requester_id = #{criteria.requesterId}
+            </if>
+            <if test="criteria.assigneeId != null">
+                AND ticket_item.assignee_id = #{criteria.assigneeId}
+            </if>
+            <if test="criteria.keyword != null and criteria.keyword != ''">
+                AND (ticket_item.ticket_no LIKE CONCAT('%', #{criteria.keyword}, '%')
+                    OR ticket_item.title LIKE CONCAT('%', #{criteria.keyword}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <resultMap id="ticketViewMap" type="com.example.demo.mapper.model.TicketViewRow">
+        <id property="id" column="id"/>
+        <result property="ticketNo" column="ticket_no"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="status" column="status"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="categoryName" column="category_name"/>
+        <result property="requesterId" column="requester_id"/>
+        <result property="requesterName" column="requester_name"/>
+        <result property="requesterDepartmentName" column="requester_department_name"/>
+        <result property="assigneeId" column="assignee_id"/>
+        <result property="assigneeName" column="assignee_name"/>
+        <result property="version" column="version"/>
+        <result property="resolvedTime" column="resolved_time"/>
+        <result property="closedTime" column="closed_time"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="ticketColumns">
+        ticket_item.id, ticket_item.ticket_no, ticket_item.title, ticket_item.description,
+        ticket_item.status, ticket_item.category_id, category.name AS category_name,
+        ticket_item.requester_id, requester.name AS requester_name,
+        requester_department.name AS requester_department_name,
+        ticket_item.assignee_id, assignee.name AS assignee_name,
+        ticket_item.version, ticket_item.resolved_time, ticket_item.closed_time,
+        ticket_item.create_time, ticket_item.update_time
+    </sql>
+
+    <select id="countByCriteria" resultType="long">
+        SELECT COUNT(*)
+        <include refid="ticketJoin"/>
+        <include refid="criteriaWhere"/>
+    </select>
+
+    <select id="selectPageByCriteria" resultMap="ticketViewMap">
+        SELECT <include refid="ticketColumns"/>
+        <include refid="ticketJoin"/>
+        <include refid="criteriaWhere"/>
+        ORDER BY ticket_item.create_time DESC, ticket_item.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="selectDetailById" resultMap="ticketViewMap">
+        SELECT <include refid="ticketColumns"/>
+        <include refid="ticketJoin"/>
+        WHERE ticket_item.id = #{id}
+    </select>
+
+    <select id="selectRecordsByTicketId" resultType="com.example.demo.mapper.model.TicketRecordRow">
+        SELECT record_item.id,
+               record_item.action,
+               record_item.from_status AS fromStatus,
+               record_item.to_status AS toStatus,
+               record_item.content,
+               record_item.operator_id AS operatorId,
+               operator.name AS operatorName,
+               record_item.target_user_id AS targetUserId,
+               target_user.name AS targetUserName,
+               record_item.create_time AS createTime
+        FROM ticket_record record_item
+        INNER JOIN sys_user operator ON operator.id = record_item.operator_id
+        LEFT JOIN sys_user target_user ON target_user.id = record_item.target_user_id
+        WHERE record_item.ticket_id = #{ticketId}
+        ORDER BY record_item.create_time ASC, record_item.id ASC
+    </select>
+</mapper>

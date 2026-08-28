@@ -37,6 +37,15 @@ public class RedisUtils {
         valueOperations().set(key, value, timeout, unit);
     }
 
+    /** 原子写入：仅当 key 不存在时保存，适合幂等键和短期互斥标记。 */
+    public boolean setIfAbsent(String key, Object value, long timeout, TimeUnit unit) {
+        checkKey(key);
+        Assert.notNull(value, "Redis value 不能为空");
+        Assert.isTrue(timeout > 0, "Redis 过期时间必须大于 0");
+        Assert.notNull(unit, "时间单位不能为空");
+        return Boolean.TRUE.equals(valueOperations().setIfAbsent(key, value, timeout, unit));
+    }
+
     /** 获取对象。不存在时返回 null。 */
     public Object get(String key) {
         checkKey(key);

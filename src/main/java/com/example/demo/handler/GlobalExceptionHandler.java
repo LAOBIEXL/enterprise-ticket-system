@@ -5,6 +5,9 @@ import cn.dev33.satoken.exception.NotPermissionException;
 import cn.dev33.satoken.exception.NotRoleException;
 import com.example.demo.common.Result;
 import com.example.demo.exception.InvalidCredentialsException;
+import com.example.demo.exception.BusinessConflictException;
+import com.example.demo.exception.DataScopeForbiddenException;
+import com.example.demo.exception.ResourceNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.slf4j.Logger;
@@ -14,9 +17,11 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -48,11 +53,31 @@ public class GlobalExceptionHandler {
         return Result.fail(403, "没有访问该接口的权限");
     }
 
+    @ExceptionHandler(DataScopeForbiddenException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public Result<Void> handleDataScopeForbidden(DataScopeForbiddenException e) {
+        return Result.fail(403, e.getMessage());
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Result<Void> handleNotFound(ResourceNotFoundException e) {
+        return Result.fail(404, e.getMessage());
+    }
+
+    @ExceptionHandler(BusinessConflictException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Result<Void> handleConflict(BusinessConflictException e) {
+        return Result.fail(409, e.getMessage());
+    }
+
     @ExceptionHandler({
             MethodArgumentTypeMismatchException.class,
             HttpMessageNotReadableException.class,
+            MissingRequestHeaderException.class,
             MissingServletRequestParameterException.class,
             MethodArgumentNotValidException.class,
+            HandlerMethodValidationException.class,
             ConstraintViolationException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)

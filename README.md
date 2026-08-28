@@ -17,13 +17,14 @@
 
 - Controller、Service、Mapper 三层架构；
 - 用户原型 CRUD 和分页查询；
-- Sa-Token 登录、Redis 会话和 RBAC 原型；
+- 基于账号密码的 Sa-Token 登录、Redis 会话和数据库 RBAC；
 - 统一泛型响应和全局异常处理；
 - Controller 日志切面；
 - V1.0 数据库、API、状态机和权限设计基线；
-- Flyway V1~V3：系统表、工单表和基础数据迁移。
+- Flyway V1~V3：系统表、工单表和基础数据迁移；
+- 工单创建、创建流水、Redis 幂等、分页查询、详情和数据范围校验。
 
-正式用户认证和工单业务接口正在按设计基线逐步实现。
+工单状态动作、并发控制和管理端基础数据接口正在按设计基线逐步实现。
 
 ## 开始使用
 
@@ -60,4 +61,4 @@ http://localhost:8080/dev-api/swagger-ui/index.html
 .\mvnw.cmd -DskipTests package
 ```
 
-项目仍处于开发阶段，生产部署配置、正式管理员初始化和完整工单接口尚未完成。
+项目仍处于开发阶段，生产部署配置、完整工单状态闭环和管理端接口尚未完成。
