@@ -6,6 +6,7 @@ import cn.dev33.satoken.exception.NotRoleException;
 import com.example.demo.common.Result;
 import com.example.demo.exception.InvalidCredentialsException;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -32,6 +33,13 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public Result<Void> handleNotLogin(NotLoginException e) {
         return Result.fail(401, "未登录或登录已过期");
+    }
+
+    @ExceptionHandler(RedisConnectionFailureException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public Result<Void> handleRedisUnavailable(RedisConnectionFailureException e) {
+        log.error("Redis 服务不可用", e);
+        return Result.fail(503, "认证服务暂不可用，请稍后重试");
     }
 
     @ExceptionHandler({NotPermissionException.class, NotRoleException.class})
